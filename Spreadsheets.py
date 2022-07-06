@@ -2,11 +2,15 @@
 1. [DONE] Support using different datatypes as entiries including custom items;\n
 2. Support various standard operations on the table;\n
 3. Create a derived Database class to handle SQl with one item;\n
-4. [IN PROGRESS] Improve the printing outlook and performance."""
+4. [IN PROGRESS] Improve the printing outlook and performance;\n
+5. Support merged areas and draw the boundaries between them accordinagly and evently.."""
 #Going to use those imports later, so I'm going to comment them out.
 #import numpy as np
 #import timeit as tm
 #import matplotlib.pyplot as plt
+#-----------------------------------------------------------------------------------
+#THE CURRENT PROBLEMS: write the algorithm that finds the biggest item in a column.
+#-----------------------------------------------------------------------------------
 
 def arranged(item, cls: str):
     """Checks if the item belongs to the specified type."""
@@ -34,7 +38,7 @@ class Spreadsheet:
         self.depth = depth #Represents the maximum number of rows in the table.
         self.dtypes = dtypes #Represents the data types of each column.
         self.rows = 0 #Represents the number of rows in the table.
-        self.length = 0 #Represents the longest entry.
+        self.length = [] #Represents the longest entriest.
 
     def __getitem__(self, iposition: tuple):
         return self.contents[iposition]
@@ -44,21 +48,30 @@ class Spreadsheet:
 
     def __str__(self):
         """Returns a string representation of the spreadsheet."""
+        for row in self.contents:
+            for column in row:
+                column += " " * (self.length[row] - len(column))
+            print(row)
+
         return str(Sheet(self.contents[0], index = None, header=True)) + "\n" + "\n".join(
             str(row) for row in self.contents[1:])
 
     def log(self, row: list):
         """Logs a row to the spreadsheet."""
-        if self.rows >= self.depth + 1:
-            raise IndexError("Too many rows")
+        if self.rows + 1 >= self.depth:
+            raise IndexError(f"Exceeded maximum size of {self.depth} rows.")
         for column in range(len(row)):
             if not arranged(row[column], self.dtypes[column]):
-                raise TypeError("Wrong data type in {}".format(row[column]))
+                raise TypeError(f"Spreadsheet doesn't support {type(row[column])} on the column {column}. Use {self.dtypes[column]} instead.")
         self.rows += 1
-        self.contents.append(Sheet(row, index = self.rows))
-        if len("".join(str(row))) > self.length:
-            self.length = len("".join(str(row)))
-    
+        self.contents.append(row)
+        self.length.append(0)
+        for column in range(len(self.contents) - 1):
+            for item in self.contents[column]:
+                if len(item) > self.length[column]:
+                    self.length[column] = item
+            print(self.length[column])
+
     def viewRow(self, row: int):
         """Returns a string representation of a row."""
         return str(self.contents[row])
