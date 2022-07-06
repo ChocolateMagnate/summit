@@ -8,7 +8,7 @@
 #import timeit as tm
 #import matplotlib.pyplot as plt
 
-def arranged(item, cls: list["str", "int", "float", "bool", "list", "dict", "tuple", "set", "None"]):
+def arranged(item, cls: str):
     """Checks if the item belongs to the specified type."""
     return type(item).__name__ == cls
 
