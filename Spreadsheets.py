@@ -10,27 +10,7 @@
 
 def arranged(item, cls: list["str", "int", "float", "bool", "list", "dict", "tuple", "set", "None"]):
     """Checks if the item belongs to the specified type."""
-    result = False
-    match cls:
-        case "str":
-            result = isinstance(item, str)
-        case "int":
-            result = isinstance(item, int)
-        case "float":
-            result = isinstance(item, float)
-        case "bool":
-            result = isinstance(item, bool)
-        case "list":
-            result = isinstance(item, list)
-        case "tuple":
-            result = isinstance(item, tuple)
-        case "dict":
-            result = isinstance(item, dict)
-        case "set":
-            result = isinstance(item, set)
-        case "None":
-            result = item is None
-    return result
+    return type(item).__name__ == cls
 
 class Sheet:
     """Node class for the Spreadsheet class."""
@@ -53,7 +33,7 @@ class Spreadsheet:
         self.columns = len(header) #Represents the number of columns in the table.
         self.depth = depth #Represents the maximum number of rows in the table.
         self.dtypes = dtypes #Represents the data types of each column.
-        self.counter = 0 #Represents the number of rows in the table.
+        self.rows = 0 #Represents the number of rows in the table.
         self.length = 0 #Represents the longest entry.
 
     def __getitem__(self, iposition: tuple):
@@ -69,27 +49,16 @@ class Spreadsheet:
 
     def log(self, row: list):
         """Logs a row to the spreadsheet."""
-        if self.counter >= self.depth + 1:
+        if self.rows >= self.depth + 1:
             raise IndexError("Too many rows")
         for column in range(len(row)):
             if not arranged(row[column], self.dtypes[column]):
                 raise TypeError("Wrong data type in {}".format(row[column]))
-        self.counter += 1
-        self.contents.append(Sheet(row, index = self.counter))
+        self.rows += 1
+        self.contents.append(Sheet(row, index = self.rows))
         if len("".join(str(row))) > self.length:
             self.length = len("".join(str(row)))
-
-    def remove(self, row: list):
-        """Removes a row from the spreadsheet."""
-        self.contents.remove(row)
-        self.counter -= 1
-
-    def pop(self, row: list):
-        """Removes a row from the spreadsheet and returns it."""
-        result = self.contents.pop(row)
-        self.counter -= 1
-        return result
-
+    
     def viewRow(self, row: int):
         """Returns a string representation of a row."""
         return str(self.contents[row])
@@ -100,7 +69,32 @@ class Spreadsheet:
 
     def describe(self):
         """Returns basic statistics about the spreadsheets."""
-        return {"Rows": self.counter, "Columns": self.columns}
+        return {"Rows": self.rows, "Columns": self.columns}
+
+    def remove(self, value: list):
+        """Removes all matched rows from the spreadsheet."""
+        self.contents.remove(value)
+        self.rows -= 1
+
+    def delete(self, index: int):
+        """Deletes a row from the spreadsheet."""
+        self.contents.pop(index)
+        self.rows -= 1
+
+    def pop(self, row: list):
+        """Removes a row from the spreadsheet and returns it."""
+        result = self.contents.pop(row)
+        self.rows -= 1
+        return result
+
+    def clear(self, header: list[str], dtypes: list[str], depth: int):
+        """Clears the contents of the spreadsheet."""
+        self.contents = [header]
+        self.columns = len(self.contents[0])
+        self.dtypes = dtypes
+        self.depth = depth
+        self.rows = 0
+        self.length = 0
 
 def main():
     """Main function for testing."""
