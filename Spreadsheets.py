@@ -2,7 +2,7 @@
 1. [DONE] Support using different datatypes as entiries including custom items;\n
 2. Support various standard operations on the table;\n
 3. Create a derived Database class to handle SQl with one item;\n
-4. Improve the printing outlook and performance."""
+4. [IN PROGRESS] Improve the printing outlook and performance."""
 #Going to use those imports later, so I'm going to comment them out.
 #import numpy as np
 #import timeit as tm
@@ -31,23 +31,19 @@ def arranged(item, cls: list["str", "int", "float", "bool", "list", "dict", "tup
         case "None":
             result = item is None
     return result
-class SheetNode:
+
+class Sheet:
     """Node class for the Spreadsheet class."""
-    def __init__(self, text, header: bool = False) -> None:
-        text, self.text = str(text), ""
+    def __init__(self, content, index: int or None, header: bool = False) -> None:
+        if isinstance(content, list):
+            content = list(content)
         if header:
-            self.text = "~" * len(text) + "\n" + "!" + text + "!" + "\n" + "~" * len(text)
+            self.text = "~" * len(str(content)) + "\n" + " " + "!" + str(content) + "!" + "\n" + "~" * len(str(content))
         else:
-            self.text = "-" * len(text) + "\n" + "|" + text + "|" + "\n" + "-" * len(text)
+            self.text = str(index) + "|" + str(content) + "|" + "\n" + "-" * len(str(content))
+        self.text = self.text.replace("[", "").replace("]", "").replace(",", " |")
     def __str__(self) -> str:
         return self.text
-
-def sheet(ls: list):
-    """Formats list into nodes of spreadsheets."""
-    result = []
-    for item in ls:
-        result.append(SheetNode(item))
-    return result
 
 class Spreadsheet:
     """Basic class for representing data in memory as spreadsheets easily consumable for
@@ -68,17 +64,8 @@ class Spreadsheet:
 
     def __str__(self):
         """Returns a string representation of the spreadsheet."""
-        #The variable that contains the header of the spreasheet.
-        string = str(self.contents[0]) #Header
-        for row in range(1, self.counter + 1 if self.counter < 1000 else 1000):
-            string += "\n" + " " if row < 100 else "  " + self.contents[row]
-        return string
-        
-        #string = str("~" * (self.length + 3) + "\n" + " " + str(self.contents[0]) + "\n" + "~" * (self.length + 3))
-        #for row in range(1, self.counter+1 if self.counter < 1000 else 1000):
-        #    string += "\n" + " " if row < 100 else "  " + str(row) + str(self.contents[row])
-        #string = string.replace("[", "|").replace("]", "|").replace(",", "\t")
-        
+        return str(Sheet(self.contents[0], index = None, header=True)) + "\n" + "\n".join(
+            str(row) for row in self.contents[1:])
 
     def log(self, row: list):
         """Logs a row to the spreadsheet."""
@@ -87,8 +74,8 @@ class Spreadsheet:
         for column in range(len(row)):
             if not arranged(row[column], self.dtypes[column]):
                 raise TypeError("Wrong data type in {}".format(row[column]))
-        self.contents.append(sheet(row))
         self.counter += 1
+        self.contents.append(Sheet(row, index = self.counter))
         if len("".join(str(row))) > self.length:
             self.length = len("".join(str(row)))
 
@@ -115,8 +102,6 @@ class Spreadsheet:
         """Returns basic statistics about the spreadsheets."""
         return {"Rows": self.counter, "Columns": self.columns}
 
-
-
 def main():
     """Main function for testing."""
     table = Spreadsheet(["Name", "Age", "Job", "Salary"],
@@ -126,8 +111,6 @@ def main():
     table.log(["Jane", 23, "Doctor", 120000])
     table.log(["Mary", 22, "Nurse", 90000])
     #table.log([56, "g", 5, "100000"]) Error successfully raised.
-    print(table.describe())
-    print(table.viewRow(1) + "\n")
     print(table)
 
 if __name__=="__main__":
