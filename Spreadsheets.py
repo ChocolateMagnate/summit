@@ -3,42 +3,18 @@
 2. Support various standard operations on the table;\n
 3. Create a derived Database class to handle SQl with one item;\n
 4. [IN PROGRESS] Improve the printing outlook and performance;\n
-5. Support merged areas and draw the boundaries between them accordinagly and evently.."""
+5. [IN PROGRESS] Support merged areas and draw the boundaries between them accordinagly and evently.."""
 #Going to use those imports later, so I'm going to comment them out.
 #import numpy as np
 #import timeit as tm
 #import matplotlib.pyplot as plt
-#-----------------------------------------------------------------------------------
-#THE CURRENT PROBLEMS: write the algorithm that finds the biggest item in a column.
-#-----------------------------------------------------------------------------------
+from math import *
 from tabulate import tabulate
 
 
 def arranged(item, cls: str) -> bool:
     """Checks if the item belongs to the specified type."""
     return type(item).__name__ == cls
-
-class Sheet:
-    """Cells of spreadsheets."""
-    def __init__(self, content, address: tuple, length: int or tuple) -> None:
-        if len(address) != 2 or not isinstance(address[0], int) or not isinstance(address[1], int):
-            raise ValueError(f"The address must be a tuple of two integers, {address} given.")
-        #The Sheet constructor converts a list of item into a list of seperate sheets.
-        self.content = content
-        self.address = address #(row, column)
-        self.stratch = length
-        self.type = type(content).__name__
-        self.length = len(str(content))
-
-        #if isinstance(content, list):
-        #    content = list(content)
-        #if header:
-        #    self.text = "~" * len(str(content)) + "\n" + " " + "!" + str(content) + "!" + "\n" + "~" * len(str(content))
-        #else:
-        #    self.text = str(index) + "|" + str(content) + "|" + "\n" + "-" * len(str(content))
-        #self.text = self.text.replace("[", "").replace("]", "").replace(",", " |")
-    def __str__(self) -> str:
-        return str(self.content)
 
 class Spreadsheet:
     """Basic class for representing data in memory as spreadsheets easily consumable for
@@ -62,9 +38,6 @@ class Spreadsheet:
         """Returns a string representation of the spreadsheet."""
         return tabulate(self.contents, headers="keys", tablefmt="grid")
 
-        #return str(Sheet(self.contents[0], index = None, header=True)) + "\n" + "\n".join(
-        #    str(row) for row in self.contents[1:])
-
     def log(self, row: list):
         """Logs a row to the spreadsheet."""
         if self.depth is not None and self.rows + 1 >= self.depth:
@@ -78,11 +51,6 @@ class Spreadsheet:
         self.contents += row
         self.grid.append([item for item in enumerate(row, self.index)])
         self.index += len(self.contents)
-        #for column in enumerate(self.contents-1):
-        #    for item in self.contents[column]:
-        #        if len(item) > self.length[column]:
-        #            self.length[column] = item
-        #    print(self.length[column])
 
     def viewRow(self, row: int):
         """Returns a string representation of a row."""
