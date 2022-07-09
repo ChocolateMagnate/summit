@@ -11,66 +11,78 @@
 #-----------------------------------------------------------------------------------
 #THE CURRENT PROBLEMS: write the algorithm that finds the biggest item in a column.
 #-----------------------------------------------------------------------------------
+from tabulate import tabulate
 
-def arranged(item, cls: str):
+
+def arranged(item, cls: str) -> bool:
     """Checks if the item belongs to the specified type."""
     return type(item).__name__ == cls
 
 class Sheet:
-    """Node class for the Spreadsheet class."""
-    def __init__(self, content, index: int or None, header: bool = False) -> None:
-        if isinstance(content, list):
-            content = list(content)
-        if header:
-            self.text = "~" * len(str(content)) + "\n" + " " + "!" + str(content) + "!" + "\n" + "~" * len(str(content))
-        else:
-            self.text = str(index) + "|" + str(content) + "|" + "\n" + "-" * len(str(content))
-        self.text = self.text.replace("[", "").replace("]", "").replace(",", " |")
+    """Cells of spreadsheets."""
+    def __init__(self, content, address: tuple, length: int or tuple) -> None:
+        if len(address) != 2 or not isinstance(address[0], int) or not isinstance(address[1], int):
+            raise ValueError(f"The address must be a tuple of two integers, {address} given.")
+        #The Sheet constructor converts a list of item into a list of seperate sheets.
+        self.content = content
+        self.address = address #(row, column)
+        self.stratch = length
+        self.type = type(content).__name__
+        self.length = len(str(content))
+
+        #if isinstance(content, list):
+        #    content = list(content)
+        #if header:
+        #    self.text = "~" * len(str(content)) + "\n" + " " + "!" + str(content) + "!" + "\n" + "~" * len(str(content))
+        #else:
+        #    self.text = str(index) + "|" + str(content) + "|" + "\n" + "-" * len(str(content))
+        #self.text = self.text.replace("[", "").replace("]", "").replace(",", " |")
     def __str__(self) -> str:
-        return self.text
+        return str(self.content)
 
 class Spreadsheet:
     """Basic class for representing data in memory as spreadsheets easily consumable for
-    machines. Might be useful for ML algorithms and data processing."""
-    def __init__(self, header: list[str], dtypes: list[str], depth: int):
-        self.contents = [header] #Represents the whole table as a two-dimensional list.
-        self.columns = len(header) #Represents the number of columns in the table.
+    machines. It is built as a two-dimensional layout of sheets."""
+    def __init__(self, header: list[str], dtypes: list[str], depth: int or None):
+        self.contents = header #Represents the values within the spreadsheet.
+        self.grid = [x[0] for x in enumerate(header)] #Represents the 2D layout.
+        self.index = self.columns = len(header) #Represents the number of columns in the table.
         self.depth = depth #Represents the maximum number of rows in the table.
         self.dtypes = dtypes #Represents the data types of each column.
         self.rows = 0 #Represents the number of rows in the table.
         self.length = [] #Represents the longest entriest.
 
-    def __getitem__(self, iposition: tuple):
-        return self.contents[iposition]
+    def __getitem__(self, iposition: tuple or int):
+        return self.contents[self.grid[iposition] if isinstance(iposition, tuple) else (0, iposition)]
 
-    def __setitem__(self, position: tuple, value: list[str]):
-        self.contents[position] = value
+    def __setitem__(self, iposition: tuple or int, value):
+        self.contents[self.grid[iposition] if isinstance(iposition, tuple) else (0, iposition)] = value
 
-    def __str__(self):
+    def __repr__(self):
         """Returns a string representation of the spreadsheet."""
-        for row in self.contents:
-            for column in row:
-                column += " " * (self.length[row] - len(column))
-            print(row)
+        return tabulate(self.contents, headers="keys", tablefmt="grid")
 
-        return str(Sheet(self.contents[0], index = None, header=True)) + "\n" + "\n".join(
-            str(row) for row in self.contents[1:])
+        #return str(Sheet(self.contents[0], index = None, header=True)) + "\n" + "\n".join(
+        #    str(row) for row in self.contents[1:])
 
     def log(self, row: list):
         """Logs a row to the spreadsheet."""
-        if self.rows + 1 >= self.depth:
+        if self.depth is not None and self.rows + 1 >= self.depth:
             raise IndexError(f"Exceeded maximum size of {self.depth} rows.")
-        for column in range(len(row)):
-            if not arranged(row[column], self.dtypes[column]):
-                raise TypeError(f"Spreadsheet doesn't support {type(row[column])} on the column {column}. Use {self.dtypes[column]} instead.")
+        for column in enumerate(row):
+            if not arranged(row[column[0]], self.dtypes[column[0]]):
+                t = f"Spreadsheet doesn't support {type(row[column])} on the column {column}. "
+                t += f"Use {self.dtypes[column]} instead."
+                raise TypeError(t)
         self.rows += 1
-        self.contents.append(row)
-        self.length.append(0)
-        for column in range(len(self.contents) - 1):
-            for item in self.contents[column]:
-                if len(item) > self.length[column]:
-                    self.length[column] = item
-            print(self.length[column])
+        self.contents += row
+        self.grid.append([item for item in enumerate(row, self.index)])
+        self.index += len(self.contents)
+        #for column in enumerate(self.contents-1):
+        #    for item in self.contents[column]:
+        #        if len(item) > self.length[column]:
+        #            self.length[column] = item
+        #    print(self.length[column])
 
     def viewRow(self, row: int):
         """Returns a string representation of a row."""
@@ -80,9 +92,9 @@ class Spreadsheet:
         """Returns a string representation of a column."""
         return self.contents[0][column]
 
-    def describe(self):
+    def describe(self) -> dict:
         """Returns basic statistics about the spreadsheets."""
-        return {"Rows": self.rows, "Columns": self.columns}
+        return {"Rows": self.rows, "Columns": self.columns, "Depth": self.depth}
 
     def remove(self, value: list):
         """Removes all matched rows from the spreadsheet."""
@@ -100,7 +112,7 @@ class Spreadsheet:
         self.rows -= 1
         return result
 
-    def clear(self, header: list[str], dtypes: list[str], depth: int):
+    def clear(self, header: list[str] or None, dtypes: list[str] or None, depth: int or None):
         """Clears the contents of the spreadsheet."""
         self.contents = [header]
         self.columns = len(self.contents[0])
@@ -112,12 +124,13 @@ class Spreadsheet:
 def main():
     """Main function for testing."""
     table = Spreadsheet(["Name", "Age", "Job", "Salary"],
-                        ["str", "int", "str", "int"], 10)
+                        ["str", "int", "str", "int"], 5)
     table.log(["John", 25, "Programmer", 100000])
     table.log(["Antony", 34, "Pilot", 349078])
     table.log(["Jane", 23, "Doctor", 120000])
     table.log(["Mary", 22, "Nurse", 90000])
-    #table.log([56, "g", 5, "100000"]) Error successfully raised.
+    #table.log(["Mark", 67, "Writer", 450000]) IndexError successfully raised.
+    #table.log([56, "g", 5, "100000"]) TypeError successfully raised.
     print(table)
 
 if __name__=="__main__":
